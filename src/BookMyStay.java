@@ -16,19 +16,23 @@ public class BookMyStay {
         // Booking queue and requests
         BookingRequestQueue bookingQueue = new BookingRequestQueue();
         bookingQueue.addRequest(new Reservation("Alice", "Single"));
-        bookingQueue.addRequest(new Reservation("Bob", "Double"));
+        bookingQueue.addRequest(new Reservation("Bob", "Penthouse")); // Invalid room type
         bookingQueue.addRequest(new Reservation("Charlie", "Suite"));
 
-        // Booking service
+        // Booking service with validation
         BookingService bookingService = new BookingService(inventory, roomTypes);
 
         // Booking history
         BookingHistory bookingHistory = new BookingHistory();
 
-        // Process bookings and record history
-        Map<String, Reservation> confirmedReservations = bookingService.processBookings(bookingQueue, bookingHistory);
+        // Process bookings with validation
+        try {
+            Map<String, Reservation> confirmedReservations = bookingService.processBookings(bookingQueue, bookingHistory);
+        } catch (InvalidBookingException e) {
+            System.out.println("Booking Error: " + e.getMessage());
+        }
 
-        // Generate booking report
+        // Display booking report
         BookingReportService reportService = new BookingReportService(bookingHistory);
         reportService.displayAllBookings();
     }
@@ -70,12 +74,19 @@ class RoomInventory {
         roomAvailability.put("Suite", 2);
     }
 
-    public boolean isAvailable(String roomType) {
-        return roomAvailability.getOrDefault(roomType, 0) > 0;
+    public boolean isAvailable(String roomType) throws InvalidBookingException {
+        if (!roomAvailability.containsKey(roomType)) {
+            throw new InvalidBookingException("Invalid room type: " + roomType);
+        }
+        return roomAvailability.get(roomType) > 0;
     }
 
-    public void decrementAvailability(String roomType) {
-        roomAvailability.put(roomType, roomAvailability.get(roomType) - 1);
+    public void decrementAvailability(String roomType) throws InvalidBookingException {
+        int current = roomAvailability.getOrDefault(roomType, -1);
+        if (current <= 0) {
+            throw new InvalidBookingException("No availability left for room type: " + roomType);
+        }
+        roomAvailability.put(roomType, current - 1);
     }
 }
 
@@ -118,13 +129,19 @@ class BookingService {
         this.roomTypes = roomTypes;
     }
 
-    public Map<String, Reservation> processBookings(BookingRequestQueue bookingQueue, BookingHistory history) {
+    public Map<String, Reservation> processBookings(BookingRequestQueue bookingQueue, BookingHistory history) throws InvalidBookingException {
         Map<String, Reservation> confirmed = new HashMap<>();
 
         while (!bookingQueue.isEmpty()) {
             Reservation request = bookingQueue.pollRequest();
             String type = request.getRoomType();
 
+            // Validate room type
+            if (!roomTypes.containsKey(type)) {
+                throw new InvalidBookingException("Unknown room type requested by " + request.getGuestName() + ": " + type);
+            }
+
+            // Check availability
             if (inventory.isAvailable(type)) {
                 String roomId = type.substring(0,1).toUpperCase() + roomCounter++;
                 allocatedRoomIds.putIfAbsent(type, new HashSet<>());
@@ -145,6 +162,7 @@ class BookingService {
                 System.out.println("Sorry " + request.getGuestName() + ", no " + type + " rooms available.\n");
             }
         }
+
         return confirmed;
     }
 }
@@ -170,4 +188,9 @@ class BookingReportService {
         }
         System.out.println("==============================");
     }
+}
+
+// Custom Exception
+class InvalidBookingException extends Exception {
+    public InvalidBookingException(String message) { super(message); }
 }
