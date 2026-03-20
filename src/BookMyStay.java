@@ -1,106 +1,55 @@
-
-
-
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class BookMyStay {
 
     public static void main(String[] args) {
-        RoomInventory inventory = new RoomInventory();
+        BookingRequestQueue bookingQueue = new BookingRequestQueue();
 
-        Map<String, Room> roomTypes = new HashMap<>();
-        roomTypes.put("Single", new SingleRoom());
-        roomTypes.put("Double", new DoubleRoom());
-        roomTypes.put("Suite", new SuiteRoom());
+        bookingQueue.addRequest(new Reservation("Alice", "Single"));
+        bookingQueue.addRequest(new Reservation("Bob", "Double"));
+        bookingQueue.addRequest(new Reservation("Charlie", "Suite"));
+        bookingQueue.addRequest(new Reservation("David", "Single"));
 
-        SearchService searchService = new SearchService(inventory, roomTypes);
-        searchService.displayAvailableRooms();
+        bookingQueue.displayQueue();
     }
 }
 
-class SearchService {
+class Reservation {
+    private String guestName;
+    private String roomType;
 
-    private RoomInventory inventory;
-    private Map<String, Room> roomTypes;
-
-    public SearchService(RoomInventory inventory, Map<String, Room> roomTypes) {
-        this.inventory = inventory;
-        this.roomTypes = roomTypes;
+    public Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
     }
 
-    public void displayAvailableRooms() {
-        Map<String, Integer> availability = inventory.getRoomAvailability();
+    public String getGuestName() {
+        return guestName;
+    }
 
-        for (String type : availability.keySet()) {
-            int count = availability.get(type);
+    public String getRoomType() {
+        return roomType;
+    }
+}
 
-            if (count > 0 && roomTypes.containsKey(type)) {
-                System.out.println(type + " Room:");
-                roomTypes.get(type).displayRoomDetails();
-                System.out.println("Available: " + count);
-                System.out.println();
-            }
+class BookingRequestQueue {
+
+    private Queue<Reservation> queue;
+
+    public BookingRequestQueue() {
+        queue = new LinkedList<>();
+    }
+
+    public void addRequest(Reservation reservation) {
+        queue.offer(reservation);
+    }
+
+    public void displayQueue() {
+        System.out.println("Booking Request Queue:");
+
+        for (Reservation r : queue) {
+            System.out.println("Guest: " + r.getGuestName() + ", Room: " + r.getRoomType());
         }
-    }
-}
-
-class RoomInventory {
-
-    private Map<String, Integer> roomAvailability;
-
-    public RoomInventory() {
-        roomAvailability = new HashMap<>();
-        initializeInventory();
-    }
-
-    private void initializeInventory() {
-        roomAvailability.put("Single", 5);
-        roomAvailability.put("Double", 0);
-        roomAvailability.put("Suite", 2);
-    }
-
-    public Map<String, Integer> getRoomAvailability() {
-        return roomAvailability;
-    }
-
-    public void updateAvailability(String roomType, int count) {
-        roomAvailability.put(roomType, count);
-    }
-}
-
-abstract class Room {
-    protected int numberOfBeds;
-    protected int squareFeet;
-    protected double pricePerNight;
-
-    public Room(int numberOfBeds, int squareFeet, double pricePerNight) {
-        this.numberOfBeds = numberOfBeds;
-        this.squareFeet = squareFeet;
-        this.pricePerNight = pricePerNight;
-    }
-
-    public void displayRoomDetails() {
-        System.out.println("Beds: " + numberOfBeds);
-        System.out.println("Size: " + squareFeet + " sq.ft");
-        System.out.println("Price per night: " + pricePerNight);
-    }
-}
-
-class SingleRoom extends Room {
-    public SingleRoom() {
-        super(1, 200, 1000);
-    }
-}
-
-class DoubleRoom extends Room {
-    public DoubleRoom() {
-        super(2, 350, 1800);
-    }
-}
-
-class SuiteRoom extends Room {
-    public SuiteRoom() {
-        super(3, 600, 3500);
     }
 }
