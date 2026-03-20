@@ -1,4 +1,4 @@
-public class UseCase1HotelBookingApp {
+public class BookMyStay {
     public static void main(String[] args) {
         String appName = "Hotel Booking Management System";
         String version = "v1.0";
